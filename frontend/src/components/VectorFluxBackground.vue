@@ -1,111 +1,121 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { useTheme } from '../composables/useTheme'
 
-const canvasRef = ref(null)
-let ctx, animationId
-let width, height
+const canvas = ref(null)
+let ctx = null
+let animationId = null
+let width = 0
+let height = 0
 let time = 0
-let mouseX = -1000, mouseY = -1000
 
-function initCanvas() {
-  const canvas = canvasRef.value
-  if (!canvas) return
+const { isDark } = useTheme()
 
-  ctx = canvas.getContext('2d')
-  resize()
+// We will use a soft ambient flow mesh gradient approach instead of rigid vectors.
+// We'll draw several large, blurry circles (blobs) that drift slowly.
 
-  window.addEventListener('resize', resize)
-  window.addEventListener('mousemove', onMouseMove)
-  animate()
+class Blob {
+  constructor(colorDark, colorLight, radiusMultiplier, speedX, speedY, offsetX, offsetY) {
+    this.colorDark = colorDark
+    this.colorLight = colorLight
+    this.radiusMultiplier = radiusMultiplier
+    this.speedX = speedX
+    this.speedY = speedY
+    this.offsetX = offsetX
+    this.offsetY = offsetY
+    this.x = 0
+    this.y = 0
+  }
+
+  update(time, w, h) {
+    // Gentle floating motion using sine/cosine
+    this.x = w * 0.5 + Math.cos(time * this.speedX + this.offsetX) * (w * 0.4)
+    this.y = h * 0.5 + Math.sin(time * this.speedY + this.offsetY) * (h * 0.4)
+  }
+
+  draw(ctx, isDarkTheme, w, h) {
+    const radius = Math.max(w, h) * this.radiusMultiplier
+    const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, radius)
+    
+    // Choose color based on theme
+    const color = isDarkTheme ? this.colorDark : this.colorLight
+    
+    gradient.addColorStop(0, color)
+    gradient.addColorStop(1, 'transparent')
+    
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 0, w, h)
+  }
 }
 
-function resize() {
-  if (!canvasRef.value) return
+let blobs = []
+
+function init() {
+  if (!canvas.value) return
+  ctx = canvas.value.getContext('2d')
+  
   width = window.innerWidth
   height = window.innerHeight
-  canvasRef.value.width = width
-  canvasRef.value.height = height
-}
+  canvas.value.width = width
+  canvas.value.height = height
 
-function onMouseMove(e) {
-  mouseX = e.clientX
-  mouseY = e.clientY
+  blobs = [
+    // colorDark, colorLight, radius, speedX, speedY, offsetX, offsetY
+    // Blob 1: Top Left / Blueish
+    new Blob('rgba(59, 130, 246, 0.15)', 'rgba(148, 163, 184, 0.08)', 0.6, 0.002, 0.003, 0, 1),
+    // Blob 2: Bottom Right / Violet
+    new Blob('rgba(139, 92, 246, 0.15)', 'rgba(203, 213, 225, 0.08)', 0.7, -0.0015, 0.002, 2, 3),
+    // Blob 3: Center / Slate-Blue Deep
+    new Blob('rgba(30, 41, 59, 0.20)', 'rgba(226, 232, 240, 0.10)', 0.8, 0.001, -0.002, 4, 0)
+  ]
 }
 
 function animate() {
   animationId = requestAnimationFrame(animate)
-  if (!ctx) return
-
-  ctx.clearRect(0, 0, width, height)
-  time += 0.015
-
-  const cols = Math.floor(width / 36)
-  const rows = Math.floor(height / 36)
-  const spacingX = width / cols
-  const spacingY = height / rows
-
-  const colors = ['#84CC16', '#06B6D4', '#D97706', '#F59E0B']
-
-  for (let i = 0; i < cols; i++) {
-    for (let j = 0; j < rows; j++) {
-      const x = i * spacingX + spacingX / 2
-      const y = j * spacingY + spacingY / 2
-
-      // Magnetic vector wave angle
-      let angle = Math.sin(x * 0.006 + time) + Math.cos(y * 0.006 + time * 0.8)
-
-      // Mouse magnetic influence
-      const dx = mouseX - x
-      const dy = mouseY - y
-      const dist = Math.sqrt(dx * dx + dy * dy)
-      if (dist < 250) {
-        const mouseAngle = Math.atan2(dy, dx)
-        const factor = (1 - dist / 250)
-        angle += (mouseAngle - angle) * factor * 1.5
-      }
-
-      const needleLen = 10 + Math.sin(time + i + j) * 3
-      const colorIndex = (i + j) % colors.length
-      const color = colors[colorIndex]
-
-      ctx.save()
-      ctx.translate(x, y)
-      ctx.rotate(angle)
-
-      ctx.strokeStyle = color
-      ctx.globalAlpha = 0.25 + Math.sin(time + i) * 0.1
-      ctx.lineWidth = 1.2
-
-      ctx.beginPath()
-      ctx.moveTo(-needleLen / 2, 0)
-      ctx.lineTo(needleLen / 2, 0)
-      ctx.stroke()
-
-      // Small vector head dot
-      ctx.fillStyle = color
-      ctx.beginPath()
-      ctx.arc(needleLen / 2, 0, 1.2, 0, Math.PI * 2)
-      ctx.fill()
-
-      ctx.restore()
-    }
+  time += 1
+  
+  // Clear background
+  ctx.fillStyle = isDark.value ? '#0B0F17' : '#F8FAFC'
+  ctx.fillRect(0, 0, width, height)
+  
+  // Blend mode for smoother gradient mixing
+  ctx.globalCompositeOperation = isDark.value ? 'screen' : 'multiply'
+  
+  for (const blob of blobs) {
+    blob.update(time, width, height)
+    blob.draw(ctx, isDark.value, width, height)
   }
+  
+  // Reset composite operation
+  ctx.globalCompositeOperation = 'source-over'
+}
+
+function onResize() {
+  init()
 }
 
 onMounted(() => {
-  initCanvas()
+  init()
+  window.addEventListener('resize', onResize)
+  animate()
 })
 
-onUnmounted(() => {
-  if (animationId) cancelAnimationFrame(animationId)
-  window.removeEventListener('resize', resize)
-  window.removeEventListener('mousemove', onMouseMove)
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', onResize)
+  cancelAnimationFrame(animationId)
+})
+
+watch(isDark, () => {
+  if (ctx) {
+    ctx.fillStyle = isDark.value ? '#0B0F17' : '#F8FAFC'
+    ctx.fillRect(0, 0, width, height)
+  }
 })
 </script>
 
 <template>
-  <canvas
-    ref="canvasRef"
-    class="fixed inset-0 -z-10 pointer-events-none opacity-35 mix-blend-screen"
+  <canvas 
+    ref="canvas" 
+    class="fixed inset-0 pointer-events-none z-[-10] transition-colors duration-1000"
   ></canvas>
 </template>

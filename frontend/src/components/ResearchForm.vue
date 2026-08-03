@@ -1,216 +1,128 @@
 <script setup>
 import { ref } from 'vue'
-import { Search, RefreshCw, Layers, Calendar, Sparkles, Plus, X } from 'lucide-vue-next'
+import { Terminal, Database, Clock } from 'lucide-vue-next'
+import { useI18n } from '../i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   loading: Boolean
 })
+const emit = defineEmits(['submit-research'])
 
-const emit = defineEmits(['submit-research', 'switch-tab'])
+const form = ref({
+  topic: '',
+  days: 30,
+  sources: ['reddit', 'hn', 'github', 'youtube']
+})
 
-// Multi-Tab state
-const tabs = ref([
-  { id: 'tab-1', title: 'Investigación 1', topic: '', active: true }
-])
-const activeTabId = ref('tab-1')
-const topic = ref('')
-
-const selectedSources = ref(['reddit', 'youtube', 'hn', 'github'])
-const days = ref(30)
-const forceRefresh = ref(false)
-
-const availableSources = [
-  { id: 'reddit', label: 'Reddit', code: 'RD', activeClass: 'bg-[#EA580C]/15 border-[#EA580C]/50 text-[#EA580C] shadow-[0_0_12px_rgba(234,88,12,0.15)]' },
-  { id: 'youtube', label: 'YouTube', code: 'YT', activeClass: 'bg-[#DC2626]/15 border-[#DC2626]/50 text-[#DC2626] shadow-[0_0_12px_rgba(220,38,38,0.15)]' },
-  { id: 'hn', label: 'Hacker News', code: 'HN', activeClass: 'bg-[#D97706]/15 border-[#D97706]/50 text-[#D97706] shadow-[0_0_12px_rgba(217,119,6,0.15)]' },
-  { id: 'github', label: 'GitHub', code: 'GH', activeClass: 'bg-[#64748B]/15 border-[#64748B]/50 text-slate-200 shadow-[0_0_12px_rgba(100,116,139,0.15)]' },
-  { id: 'tiktok', label: 'TikTok', code: 'TT', activeClass: 'bg-[#0D9488]/15 border-[#0D9488]/50 text-[#0D9488] shadow-[0_0_12px_rgba(13,148,136,0.15)]' },
+const SRC_OPTS = [
+  { id: 'reddit', label: 'Reddit' },
+  { id: 'hn', label: 'HackerNews' },
+  { id: 'github', label: 'GitHub' },
+  { id: 'youtube', label: 'YouTube' },
+  { id: 'tiktok', label: 'TikTok' },
 ]
 
 function toggleSource(id) {
-  if (selectedSources.value.includes(id)) {
-    if (selectedSources.value.length > 1) {
-      selectedSources.value = selectedSources.value.filter(s => s !== id)
-    }
+  if (form.value.sources.includes(id)) {
+    form.value.sources = form.value.sources.filter(s => s !== id)
   } else {
-    selectedSources.value.push(id)
+    form.value.sources.push(id)
   }
 }
 
-function addTab() {
-  const newId = `tab-${Date.now()}`
-  const newTab = { id: newId, title: `Consulta ${tabs.value.length + 1}`, topic: '', active: true }
-  tabs.value.forEach(t => t.active = false)
-  tabs.value.push(newTab)
-  activeTabId.value = newId
-  topic.value = ''
-}
-
-function switchTab(tabId) {
-  tabs.value.forEach(t => t.active = (t.id === tabId))
-  activeTabId.value = tabId
-  const current = tabs.value.find(t => t.id === tabId)
-  if (current) {
-    topic.value = current.topic
-  }
-}
-
-function removeTab(tabId, event) {
-  event.stopPropagation()
-  if (tabs.value.length === 1) return
-  tabs.value = tabs.value.filter(t => t.id !== tabId)
-  if (activeTabId.value === tabId) {
-    switchTab(tabs.value[0].id)
-  }
-}
-
-function handleSubmit() {
-  if (!topic.value.trim() || props.loading) return
-  
-  // Update active tab title
-  const current = tabs.value.find(t => t.id === activeTabId.value)
-  if (current) {
-    current.topic = topic.value.trim()
-    current.title = topic.value.trim()
-  }
-
-  emit('submit-research', {
-    topic: topic.value.trim(),
-    sources: [...selectedSources.value],
-    days: days.value,
-    force_refresh: forceRefresh.value
-  })
+function submit() {
+  if (!form.value.topic.trim()) return
+  emit('submit-research', { ...form.value })
 }
 </script>
 
 <template>
-  <div class="glass-panel rounded-xl p-6 shadow-2xl relative z-10 transition-all duration-300">
-    
-    <!-- Multi-Tab Comparator Header -->
-    <div class="flex items-center space-x-2 mb-4 overflow-x-auto pb-1 border-b border-[#222D3D]">
-      <button
-        v-for="t in tabs"
-        :key="t.id"
-        type="button"
-        @click="switchTab(t.id)"
-        :class="[
-          'px-3 py-1.5 rounded-t-lg text-xs font-mono border transition-all duration-200 flex items-center space-x-2 shrink-0',
-          t.active
-            ? 'bg-[#0B0F17] border-amber-500/50 text-amber-400 border-b-transparent font-semibold shadow-[0_-2px_10px_rgba(217,119,6,0.1)]'
-            : 'bg-[#151C28]/60 border-[#222D3D] text-slate-400 hover:text-slate-200'
-        ]"
-      >
-        <span class="truncate max-w-[120px]">{{ t.title }}</span>
-        <X
-          v-if="tabs.length > 1"
-          @click="removeTab(t.id, $event)"
-          class="w-3 h-3 text-slate-500 hover:text-red-400 transition ml-1"
-        />
-      </button>
-
-      <button
-        type="button"
-        @click="addTab"
-        class="p-1.5 rounded-lg border border-[#222D3D] bg-[#0B0F17]/60 text-slate-400 hover:text-amber-400 hover:border-amber-500/40 transition flex items-center justify-center shrink-0"
-        title="Abrir nueva pestaña comparadora"
-      >
-        <Plus class="w-3.5 h-3.5" />
-      </button>
+  <div class="bg-white/70 dark:bg-[#151C28]/80 backdrop-blur-md rounded-2xl p-5 sm:p-6 md:p-8 shadow-sm dark:shadow-2xl border border-slate-200 dark:border-[#222D3D] transition-colors relative z-10">
+    <div class="flex items-center space-x-3 mb-5 sm:mb-6">
+      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-100 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/20 flex items-center justify-center transition-colors shrink-0">
+        <Terminal class="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-500" />
+      </div>
+      <div>
+        <h2 class="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 font-sans transition-colors truncate">{{ t('query_title') }}</h2>
+        <p class="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-mono transition-colors break-words">{{ t('query_sub') }}</p>
+      </div>
     </div>
 
-    <form @submit.prevent="handleSubmit" class="space-y-6">
-      
-      <!-- Search Input with Glow Effect -->
-      <div class="relative group">
-        <div class="flex items-center bg-[#0B0F17] rounded-lg border border-[#222D3D] focus-within:border-amber-500/80 focus-within:ring-1 focus-within:ring-amber-500/40 focus-within:shadow-[0_0_20px_rgba(217,119,6,0.15)] transition-all duration-300">
-          <Search class="w-5 h-5 text-slate-400 ml-4 shrink-0" />
-          <input
-            v-model="topic"
-            type="text"
-            placeholder="Ingrese tema o tecnología para análisis de inteligencia (ej: FastAPI, PyTorch, Agentic AI...)"
-            class="w-full bg-transparent px-4 py-3.5 text-slate-100 placeholder-slate-500 focus:outline-none text-sm sm:text-base font-sans"
-            :disabled="loading"
+    <form @submit.prevent="submit" class="space-y-5 sm:space-y-6">
+      <!-- Input Principal -->
+      <div>
+        <div class="relative group">
+          <div class="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-amber-300 dark:from-amber-500/50 dark:to-cyan-500/50 rounded-lg blur opacity-10 group-hover:opacity-30 dark:group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+          <input 
+            v-model="form.topic" 
+            type="text" 
+            :placeholder="t('search_placeholder')"
+            class="relative w-full bg-white dark:bg-[#0B0F17] border border-slate-300 dark:border-[#222D3D] rounded-lg px-3 sm:px-4 py-3 sm:py-4 text-sm sm:text-base text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 font-mono transition-colors shadow-sm"
             required
+            :disabled="loading"
           />
-          <button
-            type="submit"
-            :disabled="loading || !topic.trim()"
-            class="mr-2 px-5 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-semibold rounded-md shadow-lg shadow-amber-600/20 flex items-center space-x-2 transition-all duration-300 text-xs tracking-wider uppercase"
-          >
-            <RefreshCw v-if="loading" class="w-3.5 h-3.5 animate-spin" />
-            <Sparkles v-else class="w-3.5 h-3.5" />
-            <span>{{ loading ? 'Ejecutando...' : 'Investigar' }}</span>
-          </button>
+          <div class="absolute right-3 sm:right-4 top-3.5 sm:top-4 text-[10px] sm:text-xs font-mono text-slate-400 dark:text-slate-500 transition-colors hidden sm:block">
+            CLI_INPUT
+          </div>
         </div>
       </div>
 
-      <!-- Controls & Selectors -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-1">
-        
-        <!-- Platform Chips Selector -->
-        <div>
-          <label class="block text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center space-x-1.5">
-            <Layers class="w-3.5 h-3.5 text-amber-500" />
-            <span>Fuentes de Inteligencia</span>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+        <!-- Rango Temporal -->
+        <div class="space-y-2.5 sm:space-y-3">
+          <label class="text-[10px] sm:text-xs font-bold font-mono text-slate-600 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-2 transition-colors">
+            <Clock class="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <span>{{ t('timeframe_title') }}</span>
           </label>
-          <div class="flex flex-wrap gap-1.5">
-            <button
-              v-for="src in availableSources"
-              :key="src.id"
-              type="button"
-              @click="toggleSource(src.id)"
+          <div class="flex space-x-2">
+            <button v-for="d in [7, 15, 30]" :key="d" type="button" @click="form.days = d"
               :class="[
-                'px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all duration-200 flex items-center space-x-1.5',
-                selectedSources.includes(src.id)
-                  ? src.activeClass
-                  : 'bg-[#0B0F17]/80 border-[#222D3D] text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                'flex-1 py-1.5 sm:py-2 rounded-md text-[10px] sm:text-xs font-mono transition-all duration-200 border shadow-sm truncate',
+                form.days === d 
+                  ? 'bg-amber-50 dark:bg-amber-500/20 border-amber-300 dark:border-amber-500 text-amber-700 dark:text-amber-400' 
+                  : 'bg-slate-50 dark:bg-[#0B0F17] border-slate-200 dark:border-[#222D3D] text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500'
               ]"
-            >
-              <span class="font-mono text-[10px] opacity-60">{{ src.code }}</span>
-              <span>{{ src.label }}</span>
+              :disabled="loading">
+              {{ d }} {{ t('days_suffix') }}
             </button>
           </div>
         </div>
 
-        <!-- Days Selector -->
-        <div>
-          <label class="block text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center space-x-1.5">
-            <Calendar class="w-3.5 h-3.5 text-amber-500" />
-            <span>Frescura Temporal</span>
+        <!-- Fuentes -->
+        <div class="space-y-2.5 sm:space-y-3">
+          <label class="text-[10px] sm:text-xs font-bold font-mono text-slate-600 dark:text-slate-400 uppercase tracking-wider flex items-center space-x-2 transition-colors">
+            <Database class="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <span>{{ t('sources_title') }}</span>
           </label>
-          <div class="grid grid-cols-3 gap-1.5">
-            <button
-              v-for="d in [7, 15, 30]"
-              :key="d"
-              type="button"
-              @click="days = d"
+          <div class="flex flex-wrap gap-1.5 sm:gap-2">
+            <button v-for="s in SRC_OPTS" :key="s.id" type="button" @click="toggleSource(s.id)"
               :class="[
-                'py-1.5 rounded-md text-xs font-medium border text-center transition-all duration-200 font-mono',
-                days === d
-                  ? 'bg-amber-500/15 border-amber-500/50 text-amber-400 shadow-[0_0_10px_rgba(217,119,6,0.12)]'
-                  : 'bg-[#0B0F17]/80 border-[#222D3D] text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                'px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md text-[10px] sm:text-[11px] font-mono transition-all duration-200 border shadow-sm',
+                form.sources.includes(s.id)
+                  ? 'bg-slate-800 dark:bg-slate-800 border-slate-700 dark:border-slate-600 text-white'
+                  : 'bg-white dark:bg-[#0B0F17] border-slate-200 dark:border-[#222D3D] text-slate-500 dark:text-slate-500 hover:border-slate-400 dark:hover:border-slate-600'
               ]"
-            >
-              {{ d }}d
+              :disabled="loading">
+              {{ s.label }}
             </button>
           </div>
         </div>
-
-        <!-- Force Refresh Toggle -->
-        <div class="flex flex-col justify-end">
-          <label class="relative flex items-center cursor-pointer select-none p-2 bg-[#0B0F17]/80 border border-[#222D3D] rounded-md hover:border-slate-700 transition-all duration-200">
-            <input
-              type="checkbox"
-              v-model="forceRefresh"
-              class="sr-only peer"
-            />
-            <div class="w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[10px] after:left-[10px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-amber-600 peer-checked:after:bg-white"></div>
-            <span class="ml-3 text-xs font-medium text-slate-300">Omitir Caché 12h (Forzar)</span>
-          </label>
-        </div>
-
       </div>
 
+      <div class="pt-4 border-t border-slate-200 dark:border-[#222D3D] flex justify-end transition-colors">
+        <button 
+          type="submit" 
+          :disabled="loading"
+          class="relative overflow-hidden group w-full sm:w-auto bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg font-mono font-bold text-xs sm:text-sm tracking-widest uppercase transition-all shadow-md hover:shadow-lg disabled:opacity-50">
+          <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-amber-500 to-amber-600 opacity-0 group-hover:opacity-100 dark:group-hover:opacity-90 transition-opacity duration-300"></div>
+          <span class="relative flex items-center justify-center space-x-2">
+            <span>{{ loading ? t('investigating_btn') : t('investigate_btn') }}</span>
+            <span v-if="!loading" class="text-amber-500 dark:text-amber-600 group-hover:text-white transition-colors">→</span>
+          </span>
+        </button>
+      </div>
     </form>
   </div>
 </template>
