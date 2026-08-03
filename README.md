@@ -16,6 +16,23 @@
 
 ---
 
+## 🚀 Live Environments
+
+Explore the application in real-time through our official production deployments:
+
+- **Live Demo (Frontend):** [https://signal-app-eight-hazel.vercel.app](https://signal-app-eight-hazel.vercel.app)
+- **API (Backend):** [https://signal-app-zxbr.onrender.com](https://signal-app-zxbr.onrender.com)
+
+---
+
+## 💻 Interface Preview
+
+*The application features an executive-grade Slate Obsidian dark mode and a sleek Light mode, complete with a reactive photorealistic 3D holographic orb and an interactive ambient mesh background.*
+
+*(Add your application screenshots or GIF demonstrations here)*
+
+---
+
 ## Executive Summary
 
 **Signal Intelligence** is a production-grade web application and agentic middleware designed to solve the modern problem of **information overload in technology and AI ecosystems**. While traditional search engines return SEO-optimized articles and static pages, critical industry shifts occur across walled gardens—Reddit threads, video transcripts, GitHub commit logs, Hacker News debates, and social signals.
