@@ -19,11 +19,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS: open for local development (Vite :5173, direct :8000, etc.)
+# CORS: explicit allowed origins (from config), credentials disabled
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,   # must be False when allow_origins=["*"]
+    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_credentials=False,   # must be False when using explicit origins without credentials
     allow_methods=["*"],
     allow_headers=["*"],
 )

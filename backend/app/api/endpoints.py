@@ -181,14 +181,15 @@ async def get_history(
         select(ResearchRecord)
         .where(ResearchRecord.status == "completed")
         .order_by(desc(ResearchRecord.created_at))
-        .limit(limit)
     )
+    if q:
+        kw = q.strip()
+        if kw:
+            query = query.where(ResearchRecord.topic.ilike(f"%{kw}%"))
+    query = query.limit(limit)
+
     result = await db.execute(query)
     records = result.scalars().all()
-
-    if q:
-        kw = q.strip().lower()
-        records = [r for r in records if kw in (r.topic or "").lower()]
 
     return [
         {
@@ -305,16 +306,14 @@ async def research_chat(
 
 @router.get("/health")
 async def health_check():
-    import shutil
     skill_path  = settings.resolved_skill_path
     script_path = os.path.join(skill_path, "scripts", "last30days.py")
+    # Report what exists and config flags, but avoid leaking absolute host paths.
 
     return {
         "status":   "healthy",
         "app_name": "Signal — 30-Day Intelligence Hub",
-        "python":   sys.executable,
         "skill": {
-            "path":          skill_path,
             "exists":        os.path.exists(skill_path),
             "script_exists": os.path.exists(script_path),
         },
@@ -326,6 +325,3 @@ async def health_check():
             "has_gemini_key":     bool(settings.GEMINI_API_KEY),
         },
     }
-
-
-import sys   # noqa: E402 — needed by health_check above
