@@ -1,8 +1,7 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { marked } from 'marked'
-import hljs from 'highlight.js'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import 'highlight.js/styles/tokyo-night-dark.css'
+import { renderMarkdown } from '../utils/markdown'
 import {
   Shield, Activity, Sparkles, AlertCircle, SlidersHorizontal,
   Download, FileText, Code, Sun, Moon, Globe, Menu, X, History
@@ -25,17 +24,6 @@ import { useI18n } from '../i18n'
 const { isDark, initTheme, toggleTheme } = useTheme()
 const { locale, toggleLocale, t } = useI18n()
 
-// ── Marked config ──────────────────────────────────────────────────────── //
-marked.setOptions({
-  highlight: (code, lang) => {
-    const l = hljs.getLanguage(lang) ? lang : 'plaintext'
-    return hljs.highlight(code, { language: l }).value
-  },
-  langPrefix: 'hljs language-',
-  breaks: true,
-  gfm: true,
-})
-
 const store = useHistoryStore()
 
 // ── State ──────────────────────────────────────────────────────────────── //
@@ -52,7 +40,7 @@ let activeES = null
 
 // ── Computed ───────────────────────────────────────────────────────────── //
 const renderedMd = computed(() =>
-  result.value?.key_insights ? marked.parse(result.value.key_insights) : ''
+  result.value?.key_insights ? renderMarkdown(result.value.key_insights) : ''
 )
 
 const filteredFeeds = computed(() => {
@@ -138,19 +126,33 @@ async function handleSubmit(payload) {
 }
 
 // ── Exports ────────────────────────────────────────────────────────────── //
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const a   = document.createElement('a')
+  a.href    = url
+  a.download = filename
+  a.click()
+  // Safe to revoke immediately after the click is dispatched.
+  URL.revokeObjectURL(url)
+}
+
+function handlePrint() {
+  window.print()
+}
+
 function exportMd() {
   if (!result.value?.key_insights) return
-  const a = document.createElement('a')
-  a.href     = URL.createObjectURL(new Blob([result.value.key_insights], { type: 'text/markdown' }))
-  a.download = `signal-${result.value.topic || 'report'}.md`
-  a.click()
+  triggerDownload(
+    new Blob([result.value.key_insights], { type: 'text/markdown' }),
+    `signal-${result.value.topic || 'report'}.md`
+  )
 }
 function exportJson() {
   if (!result.value) return
-  const a = document.createElement('a')
-  a.href     = URL.createObjectURL(new Blob([JSON.stringify(result.value, null, 2)], { type: 'application/json' }))
-  a.download = `signal-${result.value.topic || 'report'}.json`
-  a.click()
+  triggerDownload(
+    new Blob([JSON.stringify(result.value, null, 2)], { type: 'application/json' }),
+    `signal-${result.value.topic || 'report'}.json`
+  )
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────── //
@@ -158,6 +160,11 @@ onMounted(async () => {
   initTheme()
   try { health.value = await fetchHealth() } catch (_) {}
   await store.loadHistory()
+})
+
+// Prevent EventSource leak when navigating away mid-stream.
+onUnmounted(() => {
+  if (activeES) { activeES.close(); activeES = null }
 })
 </script>
 
@@ -280,7 +287,7 @@ onMounted(async () => {
                   class="px-2 py-1 rounded bg-slate-50 dark:bg-[#0B0F17] border border-slate-200 dark:border-[#222D3D] text-slate-600 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-400 dark:hover:border-cyan-500/40 text-[10px] sm:text-xs font-mono transition flex items-center space-x-1 shadow-sm">
                   <Code class="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" /><span>{{ t('export_json') }}</span>
                 </button>
-                <button @click="window.print()"
+                <button @click="handlePrint"
                   class="px-2 py-1 rounded bg-amber-100 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-500/25 text-[10px] sm:text-xs font-mono transition flex items-center space-x-1 shadow-sm">
                   <Download class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /><span>{{ t('export_pdf') }}</span>
                 </button>

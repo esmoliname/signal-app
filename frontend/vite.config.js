@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 
@@ -19,5 +19,24 @@ export default defineConfig({
         secure: false,
       }
     }
+  },
+  build: {
+    target: 'es2020',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/three')) return 'three'
+          if (id.includes('node_modules/highlight.js')) return 'highlight'
+          if (id.includes('node_modules/marked')) return 'marked'
+          if (id.includes('node_modules/dompurify')) return 'dompurify'
+          if (id.includes('node_modules')) return 'vendor'
+        }
+      }
+    },
+    chunkSizeWarningLimit: 600
+  },
+  test: {
+    environment: 'happy-dom',
+    globals: true,
   }
 })

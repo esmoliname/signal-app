@@ -1,9 +1,9 @@
 <script setup>
 import { ref, watch, nextTick } from 'vue'
-import { marked } from 'marked'
 import { MessageSquare, Send, Bot, User } from 'lucide-vue-next'
 import { sendFollowupChat } from '../services/api'
 import { useI18n } from '../i18n'
+import { renderMarkdown } from '../utils/markdown'
 
 const props = defineProps({
   taskId: String,
@@ -50,7 +50,7 @@ function scrollToBottom() {
 }
 
 function renderMd(text) {
-  return marked.parse(text || '')
+  return renderMarkdown(text)
 }
 </script>
 

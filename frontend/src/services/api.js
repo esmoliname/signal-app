@@ -3,7 +3,7 @@
  * Uses AbortController timeouts and surfaces human-readable errors.
  */
 
-const BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '')
+const BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
 export const API_BASE_URL = BASE
 
 // ─── Generic fetch with timeout ─────────────────────────────────────────── //
@@ -83,10 +83,26 @@ export async function sendFollowupChat(taskId, message) {
 /**
  * Open an SSE connection to the research stream endpoint.
  * Returns the EventSource. On connection error, calls onError(message).
+ * EventSource auto-reconnects; onError may fire repeatedly during a transient
+ * outage — callers should handle that gracefully.
+ *
+ * @param {string} taskId
+ * @param {(opts: {onError?: Function, onOpen?: Function}) => void} onErrorOrOpts
+ *   Backwards-compatible: pass a single onError function, OR an options object
+ *   `{ onError, onOpen }`. `onOpen` fires once when the stream opens.
  */
-export function openResearchStream(taskId, onError) {
+export function openResearchStream(taskId, onErrorOrOpts) {
   const url = `${BASE}/api/research/${taskId}/stream`
   const es  = new EventSource(url)
+
+  const opts = onErrorOrOpts && typeof onErrorOrOpts === 'object'
+    ? onErrorOrOpts
+    : { onError: onErrorOrOpts }
+  const { onError, onOpen } = opts || {}
+
+  es.onopen = () => {
+    if (onOpen) onOpen()
+  }
   es.onerror = () => {
     if (onError) onError(
       `Conexión SSE perdida (${url}). ` +

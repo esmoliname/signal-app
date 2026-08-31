@@ -19,7 +19,6 @@ export const useHistoryStore = defineStore('history', () => {
   }
 
   async function removeTask(taskId) {
-    console.log('[DEBUG DELETE] taskId:', taskId)
     try {
       await deleteHistoryItem(taskId)
       historyList.value = historyList.value.filter(i => i.id !== taskId)
@@ -32,7 +31,6 @@ export const useHistoryStore = defineStore('history', () => {
   }
 
   async function updateTitle(taskId, newTitle) {
-    console.log('[DEBUG RENAME] taskId:', taskId, 'title:', newTitle)
     try {
       await renameHistoryItem(taskId, newTitle)
       const idx = historyList.value.findIndex(i => i.id === taskId)
