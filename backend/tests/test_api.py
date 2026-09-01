@@ -90,3 +90,80 @@ def test_history_q_filter_limits_in_sql(client):
     resp_all = client.get("/api/history", params={"limit": 5})
     ids = {i["topic"] for i in resp_all.json()}
     assert {"webgpu compute", "rust async"} == ids
+
+
+def test_research_normalizes_topic_case_and_whitespace(client):
+    """Regression: create_research must store the topic lowercased and stripped
+    exactly as find_cached_research compares it, otherwise cache lookups never hit."""
+    resp = client.post("/api/research",
+                       json={"topic": "  AI AGENTS  ", "days": 30, "sources": ["hn"]})
+    assert resp.status_code == 200
+    body = resp.json()
+    # stored topic is normalized
+    assert body["topic"] == "ai agents"
+    assert body["status"] == "pending"
+    assert body["is_cached"] is False
+
+
+def test_research_cache_hit_on_normalized_topic(client):
+    """Two submissions that differ only by case/whitespace must share the cache
+    entry after normalization, so the 12h-TTL cache actually produces is_cached."""
+    import asyncio
+    from app.db.database import ResearchRecord
+    from datetime import datetime
+
+    async def seed():
+        async with database.AsyncSessionLocal() as s:
+            # A completed record stored with the canonical normalized topic.
+            s.add(ResearchRecord(
+                id="cached1", topic="webgpu", sources='["hn"]', days=30,
+                status="completed", progress=100,
+                key_insights="insights", feeds='[]', created_at=datetime.utcnow(),
+            ))
+            await s.commit()
+
+    asyncio.run(seed())
+
+    # Same canonical topic, but different casing/spacing → must normalise to
+    # "webgpu" and hit the completed cache entry.
+    r2 = client.post("/api/research",
+                     json={"topic": "  WebGPU  ", "days": 30, "sources": ["hn"]})
+    assert r2.status_code == 200
+    body2 = r2.json()
+    assert body2["is_cached"] is True
+    assert body2["task_id"] == "cached1"
+
+
+def test_chat_contract_no_duplicate_response_key(client):
+    """Regression: /chat must return exactly {task_id, message, reply} — a previous
+    bug added a duplicate 'response' key that broke the frontend contract."""
+    import asyncio
+    from app.db.database import ResearchRecord
+    from datetime import datetime
+
+    async def seed():
+        async with database.AsyncSessionLocal() as s:
+            s.add(ResearchRecord(
+                id="chat1", topic="webgpu", sources='["reddit"]', days=30,
+                status="completed", progress=100,
+                key_insights="1. Primer bullet\n2. Segundo bullet",
+                feeds='[]', created_at=datetime.utcnow(),
+            ))
+            await s.commit()
+
+    asyncio.run(seed())
+
+    resp = client.post("/api/research/chat1/chat",
+                       json={"message": "dame un resumen"})
+    assert resp.status_code == 200
+    body = resp.json()
+    # contract shape: exactly these keys, and no stray "response"
+    assert set(body.keys()) == {"task_id", "message", "reply"}
+    assert body["task_id"] == "chat1"
+    assert body["message"] == "dame un resumen"
+    assert "Seguimiento" in body["reply"]
+
+
+def test_chat_missing_task_returns_404(client):
+    resp = client.post("/api/research/nope/chat", json={"message": "hola"})
+    assert resp.status_code == 404

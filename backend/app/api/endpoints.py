@@ -54,7 +54,9 @@ async def create_research(
     payload: ResearchRequest,
     db: AsyncSession = Depends(get_db_session),
 ):
-    topic   = payload.topic.strip()
+    # Normalize the topic exactly as the cache lookup does (see find_cached_research)
+    # so stored and queried topics always match and the 12h-TTL cache actually hits.
+    topic   = payload.topic.strip().lower()
     sources = payload.sources or ["reddit", "youtube", "hn", "github"]
     days    = payload.days
 
@@ -115,31 +117,41 @@ async def stream_research(
         record.status = "running"
         await db.commit()
 
-        async for ev in execute_last30days_skill(task_id, topic, sources, days):
-            event_type = ev.get("event", "progress")
-            progress   = ev.get("progress", 0)
-            step       = ev.get("step", "")
+        try:
+            async for ev in execute_last30days_skill(task_id, topic, sources, days):
+                event_type = ev.get("event", "progress")
+                progress   = ev.get("progress", 0)
+                step       = ev.get("step", "")
 
-            record.progress    = progress
-            record.step_message = step
-            await db.commit()
-
-            if event_type == "complete":
-                data = ev.get("data", {})
-                record.status       = "completed"
-                record.key_insights = data.get("key_insights", "")
-                record.feeds        = json.dumps(data.get("feeds", []))
+                record.progress    = progress
+                record.step_message = step
                 await db.commit()
 
-                yield {"event": "complete",
-                       "data": json.dumps({
-                           "task_id":      task_id,
-                           "key_insights": record.key_insights,
-                           "feeds":        data.get("feeds", []),
-                       })}
-            else:
-                yield {"event": "progress",
-                       "data": json.dumps({"progress": progress, "step": step})}
+                if event_type == "complete":
+                    data = ev.get("data", {})
+                    record.status       = "completed"
+                    record.key_insights = data.get("key_insights", "")
+                    record.feeds        = json.dumps(data.get("feeds", []))
+                    await db.commit()
+
+                    yield {"event": "complete",
+                           "data": json.dumps({
+                               "task_id":      task_id,
+                               "key_insights": record.key_insights,
+                               "feeds":        data.get("feeds", []),
+                           })}
+                else:
+                    yield {"event": "progress",
+                           "data": json.dumps({"progress": progress, "step": step})}
+        finally:
+            # If the generator is cancelled (client disconnected mid-stream) or the
+            # skill loop never emitted a "complete" event, the record would be left
+            # permanently stuck in "running". Mark it failed so it is not orphaned.
+            if record.status != "completed":
+                record.status       = "failed"
+                record.error_message = record.error_message or "Stream interrupted before completion"
+                await db.commit()
+                logger.info("Marked task %s as failed (stream did not complete).", task_id)
 
     return EventSourceResponse(_run_gen())
 
@@ -299,7 +311,7 @@ async def research_chat(
                 f"{insights[:400] if insights else 'Sin datos adicionales.'}"
             )
 
-    return {"task_id": task_id, "message": msg, "reply": reply, "response": reply}
+    return {"task_id": task_id, "message": msg, "reply": reply}
 
 
 # ─── Health ───────────────────────────────────────────────────────────────── #
