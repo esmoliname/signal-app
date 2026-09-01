@@ -15,7 +15,7 @@ import HologramOrbCanvas   from '../components/HologramOrbCanvas.vue'
 import MetricsOverview     from '../components/MetricsOverview.vue'
 import FollowupChat        from '../components/FollowupChat.vue'
 
-import { API_BASE_URL, fetchHealth, createResearch, getResearchDetail, openResearchStream } from '../services/api.js'
+import { API_BASE_URL, IS_DEMO_MODE, fetchHealth, createResearch, getResearchDetail, openResearchStream } from '../services/api.js'
 import { useHistoryStore } from '../stores/historyStore'
 import { useTheme } from '../composables/useTheme'
 import { useI18n } from '../i18n'
@@ -217,11 +217,12 @@ onUnmounted(() => {
           </button>
 
           <div class="hidden md:flex items-center space-x-2 bg-slate-100 dark:bg-[#151C28]/90 border border-slate-200 dark:border-[#222D3D] px-3 py-1 rounded-md font-mono text-[11px] text-slate-600 dark:text-slate-400 transition-colors shadow-sm">
-            <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            <span :class="['relative flex h-2 w-2', IS_DEMO_MODE ? 'bg-amber-400' : 'bg-emerald-400']">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" :class="IS_DEMO_MODE ? 'bg-amber-400' : 'bg-emerald-400'"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2" :class="IS_DEMO_MODE ? 'bg-amber-500' : 'bg-emerald-500'"></span>
             </span>
-            <span>{{ API_BASE_URL }}</span>
+            <span v-if="IS_DEMO_MODE" class="text-amber-600 dark:text-amber-400 font-bold">{{ t('demo_mode') }}</span>
+            <span v-else>{{ API_BASE_URL }}</span>
           </div>
           <div v-if="health" class="hidden sm:flex items-center space-x-2 px-3 py-1 rounded-md border text-[11px] font-mono bg-slate-100 dark:bg-[#151C28]/90 border-slate-200 dark:border-[#222D3D] transition-colors shadow-sm">
             <span :class="['relative inline-flex rounded-full h-2 w-2', health.skill?.script_exists ? 'bg-amber-500' : 'bg-red-500']"></span>

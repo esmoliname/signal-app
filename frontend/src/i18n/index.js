@@ -9,6 +9,7 @@ const dictionary = {
     status_skill_missing: 'Skill Missing',
     live_cli_wrapper: 'WRAPPER CLI EN VIVO',
     '30day_hub': 'CENTRO DE INTELIGENCIA 30 DÍAS',
+    demo_mode: 'MODO DEMO',
 
     // Search & Filters
     search_placeholder: 'Investigar tema de IA o tendencia...',
@@ -67,6 +68,7 @@ const dictionary = {
     status_skill_missing: 'Skill Missing',
     live_cli_wrapper: 'LIVE CLI WRAPPER',
     '30day_hub': '30-DAY INTELLIGENCE HUB',
+    demo_mode: 'DEMO MODE',
 
     // Search & Filters
     search_placeholder: 'Investigate AI topic or trend...',
