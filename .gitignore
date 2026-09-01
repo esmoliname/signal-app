@@ -41,8 +41,11 @@ backend/app/db/signal_dev.db
 
 # Environment variables
 .env
+.env.local
 .env.*
 !.env.example
+!.env.*.example
+!.vercel.example
 
 # IDEs and Editors
 .idea/
@@ -55,3 +58,4 @@ backend/app/db/signal_dev.db
 .ntvs*
 .njsproj
 .sln
+.vercel

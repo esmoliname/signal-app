@@ -151,8 +151,10 @@ onMounted(() => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   canvasContainer.value.appendChild(renderer.domElement)
   
-  // Geometry - High detail for organic fluid distortion
-  const geometry = new THREE.IcosahedronGeometry(1.2, 128)
+  // Geometry - detail=24 keeps the fluid displacement smooth for a full-screen
+  // decorative background while staying light on low-end / mobile GPUs.
+  // (detail=128 spawned ~320k triangles for a background that is only ~40% opaque.)
+  const geometry = new THREE.IcosahedronGeometry(1.2, 24)
   
   // Material with Additive Blending and Depth Write disabled for glow effect
   material = new THREE.ShaderMaterial({
