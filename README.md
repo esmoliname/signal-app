@@ -108,6 +108,7 @@ flowchart LR
 | **Reactive WebGL Interface** | Photorealistic interactive **Three.js / GLSL** orb and ambient mesh background, with an executive dark (Slate Obsidian) and light theme engine plus full EN/ES i18n. |
 | **Sanitized Markdown Rendering** | All feed/report content is rendered through a centralized `renderMarkdown` pipeline using **DOMPurify** against a strict allowlist, neutralizing XSS payloads before insertion into the DOM. |
 | **Report Export & Indexed Persistence** | Executive reports and chat threads persisted to **SQLite**; history queries filter in SQL (index-friendly `ILike`) rather than in application memory, and downloadable report export revokes its object URL after use. |
+| **Accessible Toast Feedback** | A global toast/notification system (aria-live polite) surfaces action outcomes, and destructive actions replace the native `confirm()` with an **accessible modal dialog** (role=dialog, focus management), with aria-labels on all icon-only controls for keyboard and screen-reader users. |
 
 ---
 
@@ -229,8 +230,15 @@ TIMEOUT_SECONDS=120
 ### Frontend (`.env`)
 
 ```dotenv
+# Local development against a locally-running FastAPI backend:
 VITE_API_BASE_URL=http://localhost:8000
 ```
+
+> **Demo mode:** if `VITE_API_BASE_URL` is left **unset** the frontend runs in
+> **Demo Mode** (synthetic data) instead of failing with network errors — useful
+> for UI-only development and previews. Set it to your real backend URL (e.g.
+> `https://signal-app-zxbr.onrender.com`) at build time for production. The Vite
+> dev server proxies `/api` to `127.0.0.1:8000`.
 
 ---
 
@@ -312,8 +320,8 @@ signal-app/
 │   └── pytest.ini
 ├── frontend/
 │   ├── src/
-│   │   ├── components/   # Vue SFCs (HologramOrb, Metrics, ResearchForm, Chat)
-│   │   ├── composables/  # Theme management & i18n reactive dictionaries
+│   │   ├── components/   # Vue SFCs (HologramOrb, Metrics, ResearchForm, Chat, ToastContainer)
+│   │   ├── composables/  # Theme, i18n, and global toast notification system
 │   │   ├── services/     # Centralized HTTP API client (+ SSE)
 │   │   ├── stores/       # Pinia history & session management
 │   │   ├── utils/        # DOMPurify-sanitized markdown renderer
