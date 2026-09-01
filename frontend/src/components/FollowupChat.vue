@@ -122,6 +122,7 @@ function renderMd(text) {
         />
         <button 
           type="submit"
+          :aria-label="t('chat_send_aria')"
           :disabled="loading || !input.trim()"
           class="absolute right-1.5 top-1.5 sm:right-2 sm:top-2 p-1 sm:p-1.5 rounded-md bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 transition-colors">
           <Send class="w-3.5 h-3.5 sm:w-4 sm:h-4" />

@@ -34,6 +34,22 @@ const topKeywords = computed(() => {
 <template>
   <!-- Mobile: 1 col, Tablet: 2 cols, Desktop: 3 cols -->
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    <!-- Skeleton state: shown while no result is available yet -->
+    <template v-if="!props.result">
+      <div
+        v-for="i in 3" :key="i"
+        class="bg-white/70 dark:bg-[#151C28]/80 backdrop-blur-md p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-[#222D3D] shadow-sm dark:shadow-md animate-pulse"
+      >
+        <div class="flex items-center space-x-2 sm:space-x-3 mb-2 sm:mb-3">
+          <div class="w-4 h-4 rounded bg-slate-200 dark:bg-slate-700"></div>
+          <div class="h-2.5 w-20 bg-slate-200 dark:bg-slate-700 rounded"></div>
+        </div>
+        <div class="h-6 sm:h-7 w-24 bg-slate-200 dark:bg-slate-700 rounded mt-2"></div>
+        <div class="h-2 w-16 bg-slate-200 dark:bg-slate-700 rounded mt-2"></div>
+      </div>
+    </template>
+
+    <template v-else>
     <!-- Volumen -->
     <div class="bg-white/70 dark:bg-[#151C28]/80 backdrop-blur-md p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-[#222D3D] shadow-sm dark:shadow-md transition-colors relative overflow-hidden group">
       <div class="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-amber-500/10 rounded-full blur-2xl -mr-6 -mt-6 sm:-mr-8 sm:-mt-8 transition"></div>
@@ -73,5 +89,6 @@ const topKeywords = computed(() => {
         </span>
       </div>
     </div>
+    </template>
   </div>
 </template>

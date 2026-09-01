@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { fetchHistory, deleteHistoryItem, renameHistoryItem } from '../services/api.js'
+import { toastError } from '../composables/useToasts'
 
 export const useHistoryStore = defineStore('history', () => {
   const historyList = ref([])
@@ -13,6 +14,7 @@ export const useHistoryStore = defineStore('history', () => {
       historyList.value = await fetchHistory() || []
     } catch (e) {
       console.error('[historyStore] loadHistory error:', e)
+      toastError(`No se pudo cargar el historial: ${e.message}`)
     } finally {
       isLoading.value = false
     }
@@ -26,6 +28,7 @@ export const useHistoryStore = defineStore('history', () => {
       return true
     } catch (e) {
       console.error('[historyStore] removeTask error:', e)
+      toastError(`No se pudo eliminar el expediente: ${e.message}`)
       return false
     }
   }
@@ -39,6 +42,7 @@ export const useHistoryStore = defineStore('history', () => {
       return true
     } catch (e) {
       console.error('[historyStore] updateTitle error:', e)
+      toastError(`No se pudo renombrar el expediente: ${e.message}`)
       return false
     }
   }

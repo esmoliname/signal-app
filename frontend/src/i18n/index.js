@@ -10,6 +10,10 @@ const dictionary = {
     live_cli_wrapper: 'WRAPPER CLI EN VIVO',
     '30day_hub': 'CENTRO DE INTELIGENCIA 30 DÍAS',
     demo_mode: 'MODO DEMO',
+    open_menu: 'Abrir menú de navegación',
+    close_menu: 'Cerrar menú',
+    toggle_theme: 'Cambiar tema claro/oscuro',
+    toggle_language: 'Cambiar idioma',
 
     // Search & Filters
     search_placeholder: 'Investigar tema de IA o tendencia...',
@@ -45,7 +49,17 @@ const dictionary = {
     new_research_btn: '+ NUEVA INVESTIGACIÓN',
     records_title: 'EXPEDIENTES DE SESIÓN',
     search_history_placeholder: 'Buscar expediente...',
+    search_history_aria: 'Buscar en el historial de sesiones',
     confirm_delete_title: '¿Eliminar expediente?',
+    confirm_delete_body: 'Esta acción eliminará permanentemente el expediente seleccionado. No se puede deshacer.',
+    cancel: 'Cancelar',
+    delete_confirm_btn: 'Eliminar',
+    rename: 'Renombrar',
+    delete: 'Eliminar',
+    edit_aria: 'Editar expediente',
+    delete_aria: 'Eliminar expediente',
+    rename_ok: 'Expediente renombrado correctamente.',
+    delete_ok: 'Expediente eliminado.',
     noSavedSessions: 'Sin expedientes guardados',
     ago: 'hace',
 
@@ -55,6 +69,7 @@ const dictionary = {
     chat_empty: 'Haz una pregunta de seguimiento sobre este informe.',
     chat_placeholder: 'Haz una pregunta de seguimiento sobre este informe...',
     chat_send: 'Enviar',
+    chat_send_aria: 'Enviar mensaje',
     chat_quick_prompts: 'Preguntas Rápidas',
 
     // Progress Overlay
@@ -69,6 +84,10 @@ const dictionary = {
     live_cli_wrapper: 'LIVE CLI WRAPPER',
     '30day_hub': '30-DAY INTELLIGENCE HUB',
     demo_mode: 'DEMO MODE',
+    open_menu: 'Open navigation menu',
+    close_menu: 'Close menu',
+    toggle_theme: 'Toggle light/dark theme',
+    toggle_language: 'Switch language',
 
     // Search & Filters
     search_placeholder: 'Investigate AI topic or trend...',
@@ -104,7 +123,17 @@ const dictionary = {
     new_research_btn: '+ NEW RESEARCH',
     records_title: 'SESSION RECORDS',
     search_history_placeholder: 'Search record...',
-    confirm_delete_title: 'Delete record permanently?',
+    search_history_aria: 'Search the session history',
+    confirm_delete_title: 'Delete record?',
+    confirm_delete_body: 'This will permanently delete the selected record. This cannot be undone.',
+    cancel: 'Cancel',
+    delete_confirm_btn: 'Delete',
+    rename: 'Rename',
+    delete: 'Delete',
+    edit_aria: 'Edit record',
+    delete_aria: 'Delete record',
+    rename_ok: 'Record renamed successfully.',
+    delete_ok: 'Record deleted.',
     noSavedSessions: 'No saved records',
     ago: 'ago',
 
@@ -114,6 +143,7 @@ const dictionary = {
     chat_empty: 'Ask a follow-up question about this report.',
     chat_placeholder: 'Ask a follow-up question about this report...',
     chat_send: 'Send',
+    chat_send_aria: 'Send message',
     chat_quick_prompts: 'Quick Prompts',
 
     // Progress Overlay

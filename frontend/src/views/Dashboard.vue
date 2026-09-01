@@ -8,6 +8,7 @@ import {
 } from 'lucide-vue-next'
 
 import ResearchForm        from '../components/ResearchForm.vue'
+import { useToasts } from '../composables/useToasts'
 import ResultCard          from '../components/ResultCard.vue'
 import SidebarHistory      from '../components/SidebarHistory.vue'
 import VectorFluxBackground from '../components/VectorFluxBackground.vue'
@@ -25,6 +26,7 @@ const { isDark, initTheme, toggleTheme } = useTheme()
 const { locale, toggleLocale, t } = useI18n()
 
 const store = useHistoryStore()
+const { error: toastError } = useToasts()
 
 // ── State ──────────────────────────────────────────────────────────────── //
 const loading      = ref(false)
@@ -71,6 +73,7 @@ async function loadDetail(taskId, showSpinner = false) {
     result.value = await getResearchDetail(taskId)
   } catch (err) {
     errorMsg.value = err.message
+    toastError(err.message)
   } finally {
     if (showSpinner) loading.value = false
   }
@@ -106,14 +109,25 @@ async function handleSubmit(payload) {
     })
 
     activeES.addEventListener('progress', (e) => {
-      const p = JSON.parse(e.data)
-      progress.value    = p.progress
-      stepMessage.value = p.step
+      try {
+        const p = JSON.parse(e.data)
+        progress.value    = p.progress
+        stepMessage.value = p.step
+      } catch (_) {
+        console.warn('Malformed SSE progress payload ignored:', e.data)
+      }
     })
 
     activeES.addEventListener('complete', async (e) => {
       if (activeES) { activeES.close(); activeES = null }
-      const c = JSON.parse(e.data)
+      let c
+      try {
+        c = JSON.parse(e.data)
+      } catch (_) {
+        console.warn('Malformed SSE complete payload — reloading detail from DB.', e.data)
+        loading.value = false
+        return
+      }
       await loadDetail(c.task_id, true)
       await store.loadHistory()
       loading.value = false
@@ -122,6 +136,7 @@ async function handleSubmit(payload) {
   } catch (err) {
     errorMsg.value = err.message
     loading.value  = false
+    toastError(err.message)
   }
 }
 
@@ -185,7 +200,7 @@ onUnmounted(() => {
 
         <div class="flex items-center space-x-3">
           <!-- Mobile Drawer Toggle -->
-          <button @click="isMobileDrawerOpen = true" class="lg:hidden p-1.5 rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1C2536] transition-colors">
+          <button @click="isMobileDrawerOpen = true" :aria-label="t('open_menu')" class="lg:hidden p-1.5 rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1C2536] transition-colors">
             <Menu class="w-5 h-5" />
           </button>
           
@@ -205,13 +220,13 @@ onUnmounted(() => {
 
         <div class="flex items-center space-x-2 sm:space-x-3 text-xs">
           <!-- i18n Toggle -->
-          <button @click="toggleLocale" class="flex items-center space-x-1 bg-slate-100 dark:bg-[#151C28]/90 border border-slate-200 dark:border-[#222D3D] px-2 py-1.5 sm:py-1 rounded-md font-mono text-[10px] sm:text-[11px] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#1C2536] transition-colors shadow-sm">
+          <button @click="toggleLocale" :aria-label="t('toggle_language')" class="flex items-center space-x-1 bg-slate-100 dark:bg-[#151C28]/90 border border-slate-200 dark:border-[#222D3D] px-2 py-1.5 sm:py-1 rounded-md font-mono text-[10px] sm:text-[11px] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#1C2536] transition-colors shadow-sm">
             <Globe class="w-3.5 h-3.5" />
             <span>{{ locale }}</span>
           </button>
 
           <!-- Theme Toggle -->
-          <button @click="toggleTheme" class="flex items-center space-x-1 bg-slate-100 dark:bg-[#151C28]/90 border border-slate-200 dark:border-[#222D3D] px-2 py-1.5 sm:py-1 rounded-md font-mono text-[10px] sm:text-[11px] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#1C2536] transition-colors shadow-sm">
+          <button @click="toggleTheme" :aria-label="t('toggle_theme')" :aria-pressed="isDark" class="flex items-center space-x-1 bg-slate-100 dark:bg-[#151C28]/90 border border-slate-200 dark:border-[#222D3D] px-2 py-1.5 sm:py-1 rounded-md font-mono text-[10px] sm:text-[11px] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#1C2536] transition-colors shadow-sm">
             <Sun v-if="isDark" class="w-3.5 h-3.5 text-amber-400" />
             <Moon v-else class="w-3.5 h-3.5 text-indigo-500" />
           </button>
@@ -368,7 +383,7 @@ onUnmounted(() => {
             <History class="w-5 h-5" />
             <span class="font-mono font-bold uppercase tracking-wider text-xs">{{ t('records_title') }}</span>
           </div>
-          <button @click="isMobileDrawerOpen = false" class="p-1.5 rounded-md text-slate-500 hover:bg-slate-200 dark:hover:bg-[#1C2536] transition-colors">
+          <button @click="isMobileDrawerOpen = false" :aria-label="t('close_menu')" class="p-1.5 rounded-md text-slate-500 hover:bg-slate-200 dark:hover:bg-[#1C2536] transition-colors">
             <X class="w-5 h-5" />
           </button>
         </div>
